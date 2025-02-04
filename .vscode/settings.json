@@ -1,0 +1,17 @@
+{
+    "files.associations": {
+        "cmath": "cpp",
+        "array": "cpp",
+        "string": "cpp",
+        "string_view": "cpp",
+        "vector": "cpp",
+        "span": "cpp",
+        "dev_access.h": "c",
+        "*.tcc": "cpp",
+        "__bit_reference": "cpp",
+        "chrono": "cpp",
+        "bitset": "cpp",
+        "algorithm": "cpp",
+        "format": "cpp"
+    }
+}

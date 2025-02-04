@@ -182,7 +182,7 @@ void pwm_signal_car(CarInfo *carInfo)
 	// We must * DUTY_RANGE before we / SPEED_RANGE as we don't have floats
 	const uint32_t PwmDutyCycle =
 	  (SpeedOffset * DutyRange) / SpeedRange + PWM_MIN_DUTY_CYCLE;
-	auto pwm = MMIO_CAPABILITY(SonataPwm, pwm);
+	auto pwm = MMIO_CAPABILITY(SonataPulseWidthModulation, pwm);
 	pwm->output_set(0, PWM_MAX_DUTY_CYCLE, PwmDutyCycle);
 }
 

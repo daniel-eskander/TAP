@@ -20,9 +20,9 @@ using namespace sonata::lcd;
 /**
  * Helper. Returns a pointer to the LCD's backlight PWM device.
  */
-[[nodiscard, gnu::always_inline]] static Cap<volatile SonataLcdPwm> pwm_bl()
+[[nodiscard, gnu::always_inline]] static Cap<volatile SonataLcd> pwm_bl()
 {
-	return MMIO_CAPABILITY(SonataLcdPwm, pwm_lcd);
+	return MMIO_CAPABILITY(SonataLcd, pwm_lcd);
 }
 
 static constexpr uint8_t LcdCsPin  = 0;
