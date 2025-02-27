@@ -5,7 +5,7 @@
 #include <thread.h>
 #include<platform-uart.hh>
 #include<platform-pinmux.hh>
-
+#include<platform/arty-a7/platform-entropy.hh>
 
 using DEBUGMAIN = ConditionalDebug<true, "MAIN">;
 
@@ -114,13 +114,16 @@ Health_test_status_t health_test_APT(uint8_t* data_buffer,size_t buffer_size,siz
 
 
 
-
-
 void extract_entropy_data(uint8_t* rx_buffer, uint16_t* entropy_buffer, size_t entropy_buffer_size) {
-    for (size_t i = 0; i < ENTROPY_BUFFER_SIZE; i++) {
+    for (size_t i = 0; i < entropy_buffer_size; i++) {
         entropy_buffer[i] = rx_buffer[(i * 2)] | (rx_buffer[(i * 2) + 1] << 8);
     }
 }
+
+
+
+
+
 
 
 

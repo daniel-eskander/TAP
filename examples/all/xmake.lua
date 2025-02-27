@@ -31,6 +31,12 @@ compartment("MAIN")
     add_deps("debug")
     add_files("UART2.cc")
 
+
+
+-- compartment("RNG_TEST")
+--     add_deps("debug")
+--     add_files("health_tests.cc")
+    
 -- compartment("HEALTH_TESTS")
 --     add_deps("debug")
 --     add_files("health_tests.cc")

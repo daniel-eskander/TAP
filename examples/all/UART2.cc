@@ -9,18 +9,20 @@
 
 
 
-using namespace SonataPinmux;
 
+
+using namespace SonataPinmux;
 
 
 extern "C" [[noreturn]] void __cheri_compartment("MAIN") UART2_entry(){
 
 
-    DEBUGMAIN::log("uart2 init ") ;
-
-
     auto pinSinks   = MMIO_CAPABILITY(PinSinks, pinmux_pins_sinks);
     auto blockSinks = MMIO_CAPABILITY(BlockSinks, pinmux_block_sinks);
+
+
+
+
 
 // UART_1 on ser1_tx (DONE)
     //  pinSinks->get(PinSink::ser1_tx).select(1);  // UART1_TX 
@@ -49,6 +51,8 @@ extern "C" [[noreturn]] void __cheri_compartment("MAIN") UART2_entry(){
     uart_frame[UART_FRAME_SIZE-1]=0XCC; // last 2 bytes after the data are end bytes
     uart_frame[UART_FRAME_SIZE-2]=0XCC;
     DEBUGMAIN::log("ready ") ;
+    uart1-> init();
+    DEBUGMAIN::log("uart_init ") ;
 
 
     while (true)
@@ -57,22 +61,27 @@ extern "C" [[noreturn]] void __cheri_compartment("MAIN") UART2_entry(){
 
 
             // UART_1 on  PMOD  (DONE)
-
-        uart1-> init();
+            DEBUGMAIN::log("1 ") ;
         
         if (status == IDLE)
         {
+            DEBUGMAIN::log("2") ;
+
             status = UART_PROCESSING;
-            // DEBUGMAIN::log("status:{}",status);
+             DEBUGMAIN::log("status:{}",status);
 
             if (status == UART_PROCESSING)
             {
-                thread_millisecond_wait(100);
+                thread_millisecond_wait(10);
+                DEBUGMAIN::log("inside if status:{}",status);
                 if(uart1->blocking_read_buffer(rx_buffer, DATA_SIZE ,TIMEOUT)==true){
                     DEBUGMAIN::log("UART_DATA_VALID");
+                    thread_millisecond_wait(10);
+                DEBUGMAIN::log("inside nested if status:{}",status);
                 }
                 else{  
                     //try again 
+                    DEBUGMAIN::log("inside nested else status:{}",status);
                         if(uart1->blocking_read_buffer(rx_buffer, DATA_SIZE ,TIMEOUT)==true){
                             DEBUGMAIN::log("UART_DATA_VALID");
                             }
@@ -80,11 +89,14 @@ extern "C" [[noreturn]] void __cheri_compartment("MAIN") UART2_entry(){
                                 DEBUGMAIN::log("INVALID_DATA");
                             }
 
+                            DEBUGMAIN::log("3 ") ;
+
 
                 }
-
+                DEBUGMAIN::log("4 ") ;
                 thread_millisecond_wait(100);
                 extract_entropy_data(rx_buffer, entropy_buffer, ENTROPY_BUFFER_SIZE);
+                DEBUGMAIN::log("5 ") ;
 
 
 
@@ -102,6 +114,7 @@ extern "C" [[noreturn]] void __cheri_compartment("MAIN") UART2_entry(){
             RTC_status = health_test_RTC(rx_buffer,RX_BUFFER_SIZE,WINDOW_SIZE,CUTT_OFF_VALUE);
             APT_status = health_test_APT(rx_buffer,RX_BUFFER_SIZE,WINDOW_SIZE,CUTT_OFF_VALUE);
             status = DISPLAY_RESULTS;
+            DEBUGMAIN::log("6") ;
     
         }
 
@@ -120,6 +133,7 @@ extern "C" [[noreturn]] void __cheri_compartment("MAIN") UART2_entry(){
             uart_frame[UART_FRAME_SIZE-3]=RTC_status;
             uart_frame[UART_FRAME_SIZE-4]=APT_status;
             uart2->blocking_write_buffer(uart_frame,UART_FRAME_SIZE);
+
             DEBUGMAIN::log("DONE");
             thread_millisecond_wait(1000);
             status = IDLE;

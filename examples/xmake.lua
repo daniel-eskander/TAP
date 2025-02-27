@@ -11,6 +11,8 @@ includes("../libraries")
 includes("../common.lua")
 
 add_includedirs("../third_party/sonata-system/sw/cheri/tests")
+add_includedirs("/home/daniel/quantum-dice/TAP/sonata-software_3.0/sonata-software/examples")
+
 
 option("board")
     set_default("sonata-prerelease")
@@ -158,9 +160,11 @@ firmware("DANIEL_DEMO")
                 compartment = "MAIN",
                 priority = 1,
                 entry_point = "UART2_entry",
-                stack_size = 0x1500,
+                stack_size = 0x1700,
                 trusted_stack_frames = 1
             },
+
+
         }, {expand = false})
     end)
     after_link(convert_to_uf2)
