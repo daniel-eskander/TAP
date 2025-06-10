@@ -1,0 +1,4 @@
+../Core/Src/utilities.c:10:46:Create_Input_Vector	5
+../Core/Src/utilities.c:53:6:VCP_Transmit	2
+../Core/Src/utilities.c:84:6:USART_SEND	2
+../Core/Src/utilities.c:96:6:buffer_copy	2
