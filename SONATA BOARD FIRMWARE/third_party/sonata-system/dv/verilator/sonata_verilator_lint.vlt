@@ -1,0 +1,97 @@
+// Copyright lowRISC contributors.
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+//
+// common waiver rules for verilator
+
+`verilator_config
+
+// Do not warn about unconnected pins in module instantiations, e.g.
+// `.optional_output ()`.
+lint_off -rule PINCONNECTEMPTY
+
+lint_off -rule TIMESCALEMOD
+
+// This warning gives wrong results with blackboxed embedded modules, see
+// https://github.com/verilator/verilator/issues/2430
+lint_off -rule DECLFILENAME -file "*" -match "Filename '*' does not match NOTFOUNDMODULE name:*"
+
+// Don't generate lint errors for unused parameters in packages. The point is
+// that a user of a package might not want to use all of the parameters it
+// defines.
+lint_off -rule UNUSED -file "*_pkg.sv" -match "*Parameter is not used*"
+
+// Hyperram parameters are unused in verilator simulation as we do not
+// instantiate the real controller.
+lint_off -rule UNUSED -file "*hyperram.sv" -match "*Parameter is not used*"
+// Ignore circular logic warnings in hyperram model
+lint_off -rule UNOPTFLAT -file "*tlul_adapter_sram.sv" -match "*Signal unoptimizable: Circular combinational logic: '*.u_hyperram.u_hyperram_model*"
+// Ignore circular logic warnings in tlul_socket_m1 (which occur when we connect
+// to the error responder for the HyperRAM disabled config).
+lint_off -rule UNOPTFLAT -file "*tlul_socket_m1.sv" -match "*Signal unoptimizable: Circular combinational logic: '*.u_hyperram_tl_socket.*'"
+
+// Unimportant warning where compressed and uncompress instructions are printed in the same place.
+lint_off -rule WIDTHEXPAND -file "*ibex_controller.sv" -match "*Conditional True's VARREF 'instr_compressed_i' generates 16 bits."
+
+// CHERIoT core; reports of circular logic in interactions with the TL-UL components when there are no intervening register stages;
+// these are not combinational loops. UNOPTFLAT warns of slower simulation through incurring multiple simulation delta cycles.
+lint_off -rule UNOPTFLAT -file "*ibex_load_store_unit.sv" -match "*Signal unoptimizable: Circular combinational logic: '*.tbre_req_good'"
+lint_off -rule UNOPTFLAT -file "*ibex_load_store_unit.sv" -match "*Signal unoptimizable: Circular combinational logic: '*.resp_wait'"
+lint_off -rule UNOPTFLAT -file "*ibex_load_store_unit.sv" -match "*Signal unoptimizable: Circular combinational logic: '*.lsu_req_done'"
+lint_off -rule UNOPTFLAT -file "*ibex_load_store_unit.sv" -match "*Signal unoptimizable: Circular combinational logic: '*.cpu_req_erred'"
+lint_off -rule UNOPTFLAT -file "*ibex_load_store_unit.sv" -match "*Signal unoptimizable: Circular combinational logic: '*.cpu_req_valid'"
+lint_off -rule UNOPTFLAT -file "*cheri_tbre_wrapper.sv" -match "*Signal unoptimizable: Circular combinational logic: '*.mstr_arbit_comb'"
+
+// Lint error for PULP debug module.
+lint_off -rule UNUSED -file "*pulp_riscv_dbg*" -match "*not used*"
+lint_off -rule IMPERFECTSCH -file "*pulp_riscv_dbg*"
+lint_off -rule DECLFILENAME -file "*pulp_riscv_dbg*"
+lint_off -rule PINMISSING -file "*pulp_riscv_dbg*"
+lint_off -rule WIDTH -file "*pulp_riscv_dbg/src/dm_mem.sv"
+
+lint_off -rule IMPERFECTSCH -file "*lowrisc_prim_flop_2sync_0/rtl/prim_flop_2sync.sv"
+lint_off -rule UNUSED -file "*ibex_register_file_fpga*"
+
+lint_off -rule UNUSED -file "*ibex_core.sv"
+lint_off -rule UNUSED -file "*cheri_stkz.sv"
+lint_off -rule UNUSED -file "*cheri_tbre.sv"
+lint_off -rule UNUSED -file "*ibex_tracer.sv"
+
+lint_off -rule WIDTH -file "*cheri_stkz.sv"
+lint_off -rule WIDTH -file "*cheri_tbre.sv"
+lint_off -rule WIDTH -file "*ibex_tracer.sv"
+lint_off -rule WIDTH -file "*ibex_core.sv"
+
+lint_off -rule UNDRIVEN -file "*ibexc_top_tracing.sv"
+
+lint_off -rule WIDTH  -file "*uartdpi.sv"
+lint_off -rule UNUSED -file "*uartdpi.sv"
+
+lint_off -rule WIDTH -file "*uart_core.sv"
+
+lint_off -rule WIDTH -file "*i2c_controller_fsm.sv"
+lint_off -rule WIDTH -file "*i2c_target_fsm.sv"
+lint_off -rule UNOPTFLAT -file "*i2c_fifo*.sv"
+lint_off -rule IMPERFECTSCH -file "*i2c_fifo*.sv"
+
+lint_off -rule WIDTH -file "*usbdev_counter.sv"
+lint_off -rule UNUSED -file "*usbdev.sv"
+
+lint_off -rule GENUNNAMED
+
+lint_off -rule UNOPTFLAT -file "*/rtl/ibex_core.sv" -match "*cheri_csr_*"
+lint_off -rule UNOPTFLAT -file "*/rtl/cheri_ex.sv" -match "*scr_legalization*"
+lint_off -rule UNOPTFLAT -file "*/rtl/ibex_decoder.sv" -match "*cheri_rf_we_dec*"
+lint_off -rule UNOPTFLAT -file "*/rtl/prim_fifo_async_simple.sv"
+lint_off -rule UNOPTFLAT -file "*/rtl/prim_subreg_ext.sv"
+lint_off -rule BLKSEQ -file "*/rtl/ibex_tracer.sv"
+
+// Bug seem in Verilator v5.020 where trace chandles produces a C++ compilation
+// error (generated C++ doesn't currently specify a type an internal verilator
+// function)
+tracing_off -file "*uartdpi.sv"
+
+// USBDPI model includes diagnostic nets for viewing in waveforms, as well as having some unused
+// bit in the net 'p2d'.
+lint_off -rule UNUSED -file "*usbdpi.sv" -match "*Signal is not used*"
+lint_off -rule UNUSED -file "*usbdpi.sv" -match "*Bits of signal are not used*"

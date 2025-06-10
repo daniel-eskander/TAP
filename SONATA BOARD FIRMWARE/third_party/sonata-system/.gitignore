@@ -1,0 +1,29 @@
+# Copyright lowRISC contributors.
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+target/
+
+# FuseSoC and Sofware builds are placed in build
+build/
+sw/cheri/sim_boot_stub/sim_boot_stub
+sw/cheri/sim_boot_stub/sim_sram_boot_stub
+
+# Nix based builds a placed are symlinked to result
+result
+
+# mdBook builds are placed in book
+book/
+
+# Python virtual environments use a .venv directory
+.venv/
+__pycache__
+
+# Simulation outputs
+*.fst
+*.log
+sonata_system_pcount.csv
+lcd.ppm
+
+# Files and directories used by clangd
+.cache/
+compile_commands.json

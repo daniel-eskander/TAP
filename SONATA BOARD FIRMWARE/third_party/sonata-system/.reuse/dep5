@@ -1,0 +1,38 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+
+Files: README.md
+       *.lock
+       *.md
+       data/*
+       doc/*
+       sw/cheri/sim_boot_stub/sim_boot_stub
+       vendor/lowrisc_ip/*
+       vendor/lowrisc_ibex/*
+       vendor/patches/*
+Copyright: lowRISC contributors
+License: Apache-2.0
+
+Files: vendor/display_drivers/*
+Copyright: 2022 Douglas Reis
+License: Apache-2.0
+
+Files: vendor/cheriot_safe/*
+Copyright: Microsoft Corporation
+License: Apache-2.0
+
+Files: vendor/pulp_riscv_dbg/*
+Copyright: 2020 ETH Zurich and University of Bologna
+License: SHL-0.51
+
+Files: vendor/open_hbmc/*
+Copyright: © 2020-2022, Vaagn Oganesyan <ovgn@protonmail.com>
+License: Apache-2.0
+
+Files: sw/legacy/demo/lcd_st7735/coremark/ee_printf.c
+Copyright: 2018 Embedded Microprocessor Benchmark Consortium (EEMBC)
+License: Apache-2.0
+
+Files: rtl/ip/xadc/rtl/xadc_wiz_0.v
+Copyright: 2009 - 2013 Xilinx, Inc. All rights reserved.
+License: LicenseRef-Xilinx
+

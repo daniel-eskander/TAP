@@ -1,0 +1,161 @@
+CAPI=2:
+# Copyright lowRISC contributors.
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+name: "lowrisc:sonata:system"
+description: "Sonata System"
+filesets:
+  files_rtl:
+    depend:
+      - lowrisc:sonata:design
+
+  files_sonata:
+    depend:
+      - lowrisc:ibex:fpga_xilinx_shared
+    files:
+      - rtl/fpga/padring.sv
+      - rtl/fpga/top_sonata.sv
+      - rtl/fpga/clkgen_sonata.sv
+      - rtl/fpga/rst_ctrl.sv
+      - rtl/system/rs485_ctrl.sv
+    file_type: systemVerilogSource
+
+  files_verilator:
+    depend:
+      - lowrisc:ibex:sim_shared
+      - lowrisc:dv_verilator:memutil_verilator
+      - lowrisc:dv_verilator:simutil_verilator
+      - lowrisc:dv_verilator:ibex_pcounts
+      - lowrisc:dv_dpi_c:uartdpi:0.1
+      - lowrisc:dv_dpi_sv:uartdpi:0.1
+      - lowrisc:dv_dpi_c:usbdpi:0.1
+      - lowrisc:dv_dpi_sv:usbdpi:0.1
+    files:
+      - rtl/system/rs485_ctrl.sv: { file_type: systemVerilogSource }
+      - dv/dpi/i2cdpi/i2c_lsm9ds1.cc: { file_type: cppSource }
+      - dv/dpi/i2cdpi/i2c_lsm9ds1.hh: { file_type: cppSource, is_include_file: true }
+      - dv/dpi/i2cdpi/i2c_as621x.cc: { file_type: cppSource }
+      - dv/dpi/i2cdpi/i2c_as621x.hh: { file_type: cppSource, is_include_file: true }
+      - dv/dpi/i2cdpi/i2c_hat_id.cc: { file_type: cppSource }
+      - dv/dpi/i2cdpi/i2c_hat_id.hh: { file_type: cppSource, is_include_file: true }
+      - dv/dpi/i2cdpi/i2cdevice.cc: { file_type: cppSource }
+      - dv/dpi/i2cdpi/i2cdevice.hh: { file_type: cppSource, is_include_file: true }
+      - dv/dpi/i2cdpi/i2cdpi.sv: { file_type: systemVerilogSource }
+      - dv/dpi/i2cdpi/i2cdpi.cc: { file_type: cppSource }
+      - dv/dpi/i2cdpi/i2cdpi.hh: { file_type: cppSource, is_include_file: true }
+      - dv/dpi/spidpi/spidpi.sv: { file_type: systemVerilogSource }
+      - dv/dpi/spidpi/spidpi.cc: { file_type: cppSource }
+      - dv/dpi/spidpi/spidpi.hh: { file_type: cppSource, is_include_file: true }
+      - dv/dpi/spidpi/spi_flash.cc: { file_type: cppSource }
+      - dv/dpi/spidpi/spi_flash.hh: { file_type: cppSource, is_include_file: true }
+      - dv/dpi/spidpi/spi_lcd.cc: { file_type: cppSource }
+      - dv/dpi/spidpi/spi_lcd.hh: { file_type: cppSource, is_include_file: true }
+      - dv/dpi/spidpi/spi_microsd.cc: { file_type: cppSource }
+      - dv/dpi/spidpi/spi_microsd.hh: { file_type: cppSource, is_include_file: true }
+      - dv/verilator/top_verilator.sv: { file_type: systemVerilogSource }
+      - dv/verilator/sonata_system.cc: { file_type: cppSource }
+      - dv/verilator/sonata_system.hh:  { file_type: cppSource, is_include_file: true }
+      - dv/verilator/sonata_system_main.cc: { file_type: cppSource }
+      - dv/verilator/sonata_verilator_lint.vlt:  { file_type: vlt }
+
+  files_constraints_sonata:
+    files:
+      # Per AMD advice (UG949):
+      - data/pins_sonata.xdc  # 1 file for physical +
+      - data/synth_timing.xdc # 1 file for timing (synthesis) +
+      - data/impl_timing.xdc  # 1 file for timing (implementation)
+    file_type: xdc
+
+  files_tcl:
+    files:
+      - flow/vivado_setup.tcl : { file_type: tclSource }
+      - flow/vivado_hook_opt_design_pre.tcl : { file_type: user, copyto: vivado_hook_opt_design_pre.tcl }
+      - flow/vivado_hook_place_design_pre.tcl : { file_type: user, copyto: vivado_hook_place_design_pre.tcl }
+      - flow/vivado_hook_route_design_pre.tcl : { file_type: user, copyto: vivado_hook_route_design_pre.tcl }
+
+parameters:
+  # XXX: This parameter needs to be absolute, or relative to the *.runs/synth_1
+  # directory. It's best to pass it as absolute path when invoking fusesoc, e.g.
+  # --SRAMInitFile=$PWD/sw/led/led.vmem
+  # XXX: The VMEM file should be added to the sources of the Vivado project to
+  # make the Vivado dependency tracking work. However this requires changes to
+  # fusesoc first.
+  SRAMInitFile:
+    datatype: str
+    description: SRAM initialization file in vmem hex format
+    default: "../../../../../sw/cheri/build/boot/boot_loader.vmem"
+    paramtype: vlogparam
+
+  # For value definition, please see ip/prim/rtl/prim_pkg.sv
+  PRIM_DEFAULT_IMPL:
+    datatype: str
+    paramtype: vlogdefine
+    description: Primitives implementation to use, e.g. "prim_pkg::ImplGeneric".
+
+  USE_HYPERRAM_SIM_MODEL:
+    datatype: bool
+    paramtype: vlogdefine
+    description: Use an SRAM simulation model rather than the real hyperram controller
+
+targets:
+  default: &default_target
+    filesets:
+      - files_rtl
+
+  synth:
+    <<: *default_target
+    default_tool: vivado
+    filesets_append:
+      - files_sonata
+      - files_constraints_sonata
+      - files_tcl
+    toplevel: top_sonata
+    tools:
+      vivado:
+        part: "xc7a50tcsg324-2" # Artix-7 50T
+    parameters:
+      - SRAMInitFile
+      - PRIM_DEFAULT_IMPL=prim_pkg::ImplXilinx
+
+  sim:
+    <<: *default_target
+    default_tool: verilator
+    filesets_append:
+      - files_verilator
+    toplevel: top_verilator
+    tools:
+      verilator:
+        mode: cc
+        verilator_options:
+          # Disabling tracing reduces compile times but doesn't have a
+          # huge influence on runtime performance.
+          - '--trace'
+          - '--trace-fst' # this requires -DVM_TRACE_FMT_FST in CFLAGS below!
+          - '--trace-structs'
+          - '--trace-params'
+          - '--trace-max-array 1024'
+          - '-CFLAGS "-Wall -DVM_TRACE_FMT_FST -DTOPLEVEL_NAME=top_verilator"'
+          - '-LDFLAGS "-pthread -lutil -lelf"'
+          - "-Wall"
+          - "-Wwarn-IMPERFECTSCH"
+          # RAM primitives wider than 64bit (required for ECC) fail to build in
+          # Verilator without increasing the unroll count (see Verilator#1266)
+          - "--unroll-count 72"
+    parameters:
+      - PRIM_DEFAULT_IMPL=prim_pkg::ImplGeneric
+      - USE_HYPERRAM_SIM_MODEL=true
+
+  lint:
+    <<: *default_target
+    default_tool: verilator
+    filesets_append:
+      - files_verilator
+    toplevel: top_verilator
+    tools:
+      verilator:
+        mode: lint-only
+    parameters:
+      - PRIM_DEFAULT_IMPL=prim_pkg::ImplGeneric
+      # TODO: Introduce some blackboxes for the Xilinx IP used in the hyperram
+      # controller so we can lint it, for now just exclude it from the lint run.
+      - USE_HYPERRAM_SIM_MODEL=true

@@ -1,0 +1,159 @@
+# Copyright lowRISC contributors.
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+name: CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
+  CMAKE_BUILD_TYPE: Release
+
+# Cancel jobs in progress when the pull-request is forced pushed.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  software:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: |
+        sudo apt install srecord
+        sudo mkdir -p /tools/riscv
+        sudo chmod 777 /tools/riscv
+        curl -Ls -o rv32-toolchain.tar.xz "https://github.com/lowRISC/lowrisc-toolchains/releases/download/20230427-1/lowrisc-toolchain-gcc-rv32imcb-20230427-1.tar.xz"
+        sudo tar -C /tools/riscv -xf rv32-toolchain.tar.xz --strip-components=1
+        echo "/tools/riscv/bin" >> $GITHUB_PATH
+
+    - name: Configure CMake for legacy software
+      # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
+      # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
+      run: |
+        mkdir build
+        cd build
+        cmake ..
+      working-directory: sw/legacy
+
+    - name: Build legacy software
+      # Build your software with the given configuration
+      run: |
+        make
+      working-directory: sw/legacy/build
+
+  simulator:
+    runs-on: nixos
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install Nix
+      uses: cachix/install-nix-action@v27
+      with:
+        extra_nix_config: |
+          substituters = https://nix-cache.lowrisc.org/public/ https://cache.nixos.org/
+          trusted-public-keys = nix-cache.lowrisc.org-public-1:O6JLD0yXzaJDPiQW1meVu32JIDViuaPtGDfjlOopU7o= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+
+    - name: Nix Checks
+      run: |
+        nix fmt -- . --check
+        nix flake check
+
+    - name: Run Lints
+      run: |
+        nix run .#lint-all -L
+        nix build .#sonata-simulator-lint -L
+
+    - name: Build Documentation
+      run: nix build .#sonata-documentation -L
+
+    - name: Run tests on the simulator
+      run: nix build .#tests-simulator -L
+
+  fpga:
+    runs-on: [ubuntu-22.04-fpga, sonata]
+    env:
+      BITSTREAM_PATH: build/lowrisc_sonata_system_0/synth-vivado/lowrisc_sonata_system_0.bit
+      TIMING_RPT: build/lowrisc_sonata_system_0/synth-vivado/lowrisc_sonata_system_0.runs/impl_1/top_sonata_timing_summary_postroute_physopted.rpt
+      UTILIZATION_RPT: build/lowrisc_sonata_system_0/synth-vivado/lowrisc_sonata_system_0.runs/impl_1/top_sonata_utilization_placed.rpt
+      GS_PATH: gs://lowrisc-ci-cache/lowRISC/sonata-system/bitstream
+
+    steps:
+    - uses: actions/checkout@v4
+
+    # We only write to the cache when merging into main, so we don't need th autenticate on pull-request.
+    - uses: google-github-actions/auth@v2
+      if: github.event_name != 'pull_request'
+      with:
+        project_id: lowrisc-cloud-compute
+        workload_identity_provider: projects/281751345158/locations/global/workloadIdentityPools/github-actions/providers/github-actions
+    - uses: google-github-actions/setup-gcloud@v2
+
+    - name: Install Nix
+      uses: cachix/install-nix-action@v27
+      with:
+        extra_nix_config: |
+          substituters = https://nix-cache.lowrisc.org/public/ https://cache.nixos.org/
+          trusted-public-keys = nix-cache.lowrisc.org-public-1:O6JLD0yXzaJDPiQW1meVu32JIDViuaPtGDfjlOopU7o= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+
+    # Check if there's a bitstream in the cache that maches the RTL hash computed by Nix.
+    - name: Check bitstream cache
+      run: |
+        BITSTREAM_HASH=$(nix eval .#filesets.x86_64-linux.bitstreamDependancies.outPath --raw \
+          | cut -d '/' -f4 | cut -d '-' -f1)
+        mkdir -p $(dirname $BITSTREAM_PATH)
+        curl -fo "$BITSTREAM_PATH" "https://storage.googleapis.com/lowrisc-ci-cache/lowRISC/sonata-system/bitstream/$BITSTREAM_HASH.bit" || true
+        if [ -f "$BITSTREAM_PATH" ]; then
+          echo "Bitstream $BITSTREAM_HASH.bit cached."
+          echo "file_exists=true" >> $GITHUB_ENV
+        else
+          echo "Bitstream $BITSTREAM_HASH.bit not cached."
+          echo "file_exists=false" >> $GITHUB_ENV
+        fi
+
+    # Only runs if the bitstream does not exist (not found in cache).
+    - name: Build bitstream
+      id: build_bitstream
+      if: env.file_exists == 'false' 
+      run: |
+        module load xilinx/vivado
+        nix run .#bitstream-build
+
+    - name: Upload implementation reports
+      uses: actions/upload-artifact@v4
+      with:
+        name: implementation-reports
+        path: |
+          ${{ env.TIMING_RPT }}
+          ${{ env.UTILIZATION_RPT }}
+
+    # Only upload the bistream if this is not a pull-request and the build bistream step ran. 
+    - name: Upload bitstream to the cache
+      if: github.event_name != 'pull_request' && env.file_exists == 'false' 
+      run: |
+        BITSTREAM_HASH=$(nix eval .#filesets.x86_64-linux.bitstreamDependancies.outPath --raw \
+          | cut -d '/' -f4 | cut -d '-' -f1)
+        gcloud storage cp "${BITSTREAM_PATH}" "${GS_PATH}/$BITSTREAM_HASH.bit"
+        echo "Bitstream $BITSTREAM_HASH.bit uploaded to cache."
+
+    - name: Flash bitstream
+      run: |
+        DEVICE=/dev/ttySONATA_JTAG_FPGA nix run .#bitstream-load
+
+    - name: Run software tests
+      run: |
+        nix run .#tests-fpga /dev/ttySONATA_UART_0
+
+

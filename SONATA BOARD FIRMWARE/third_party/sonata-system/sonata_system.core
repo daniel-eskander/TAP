@@ -1,0 +1,49 @@
+CAPI=2:
+# Copyright lowRISC contributors.
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+name: "lowrisc:sonata:design"
+description: "Sonata System: putting CHERIoT into the hands of engineers."
+
+filesets:
+  files_rtl_sonata_system:
+    depend:
+      - lowrisc:ibex:ibex_top_tracing
+      - pulp:riscv:debug_module
+      - lowrisc:ip:i2c
+      - lowrisc:ip:uart
+      - lowrisc:ip:usbdev
+      - lowrisc:ip:xbar_main
+      - lowrisc:ip:xbar_ifetch
+      - lowrisc:ip:spi
+      - lowrisc:ip:gpio
+      - lowrisc:ip:rev_ctl
+      - lowrisc:ip:rgbled_ctrl
+      - lowrisc:ip:hyperram
+      - lowrisc:ip:xadc
+      - lowrisc:ip:system_info
+      - lowrisc:opentitan:sonata_rv_plic
+      - lowrisc:prim:onehot
+      - lowrisc:tlul:adapter_host
+      - lowrisc:tlul:adapter_reg
+    files:
+      - rtl/system/sonata_pkg.sv
+      - rtl/bus/sonata_xbar_main.sv
+      - rtl/system/jtag_id_pkg.sv
+      - rtl/system/sonata_system.sv
+      - rtl/system/dm_top.sv
+      - rtl/system/debounce.sv
+      - rtl/system/debounce_step.sv
+      - rtl/system/pinmux.sv
+      - rtl/system/pwm.sv
+      - rtl/system/pwm_wrapper.sv
+      - rtl/system/pwm_fade.sv
+      - rtl/system/sram.sv
+      - rtl/system/rst_sync.sv
+      - rtl/system/rv_timer.sv
+    file_type: systemVerilogSource
+
+targets:
+  default:
+    filesets:
+      - files_rtl_sonata_system

@@ -1,0 +1,44 @@
+# Copyright lowRISC contributors.
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+
+[book]
+language = "en"
+multilingual = false
+src = "."
+title = "Sonata System Documentation"
+
+[build]
+create-missing = false
+
+[output.html]
+git-repository-url = "https://github.com/lowRISC/sonata-system"
+edit-url-template = "https://github.com/lowRISC/sonata-system/edit/main/{path}"
+
+additional-js = [
+    "./util/mdbook/wavejson/default.js",
+    "./util/mdbook/wavejson/wavedrom.min.js",
+    "./util/mdbook/wavejson/wavejson.js",
+]
+
+additional-css = [
+    "./util/mdbook/wavejson/wavejson.css",
+]
+
+[preprocessor.wavejson]
+command = "./util/mdbook_wavejson.py"
+
+[preprocessor.replace]
+after = ["links"]
+
+# Replace all links to a README.md to with a link to an index.md
+link_replacements = [
+    {regex = '^(?P<path>[^:#\?]*)README\.md(?P<suffix>[?#].*)?', replacement = '${path}index.md${suffix}'},
+]
+
+[[preprocessor.replace.local_link_replacements]]
+# Replace all paths pointing to something in this repository,
+# that ends with .sv, .core, .S, .cc, .hh, .h or / (for directories)
+# to a link pointing to to in GitHub.
+regex = '.*(\/|\.(sv|core|S|cc|hh|h))$'
+replacement = 'https://github.com/lowRISC/sonata-system/tree/main/${0}'
